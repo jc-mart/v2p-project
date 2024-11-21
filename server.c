@@ -9,10 +9,13 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <signal.h>
 
 #define PORT "2424"
 #define BACKLOG 10
+#define PAYLOAD "PING\0  "
+#define MAXDATASIZE 8
 
 // Prototypes
 // TODO: Split functions into files based on functionality.
@@ -172,6 +175,33 @@ int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options)
 // can create its own file to log the rtt's
 int measure_rtt(int sock_fd, int iterations)
 {
+    struct timeval start, end;
+    int numbytes;
+    double timings[10];
+    char buf[MAXDATASIZE];
+
+    for (int i = 0; i < iterations; i++) {
+        
+        gettimeofday(&start, NULL);
+
+        if (send(sock_fd, PAYLOAD, sizeof PAYLOAD, 0) == -1)
+        {
+            perror("send");
+            return -1;
+        }
+
+        if ((numbytes = recv(sock_fd, buf, MAXDATASIZE - 1, 0)) == -1)
+        {
+            perror("recv");
+            return -2;
+        }
+
+        gettimeofday(&end, NULL);
+        buf[numbytes] = '\0';
+
+        // Check if recieved messages was expected, valid pass else abort
+        if (buf == PAYLOAD);
+    }
     return 0;
 }
 
