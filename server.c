@@ -14,7 +14,7 @@
 
 #define PORT "2424"
 #define BACKLOG 10
-#define PAYLOAD "PING\0  "
+#define PAYLOAD "PING"
 #define MAXDATASIZE 8
 
 // Prototypes
@@ -22,7 +22,8 @@
 void sigchld_handler(int s);
 void *get_in_addr(struct sockaddr *s);
 int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options);
-int measure_rtt(int sock_fd, int iterations);
+int measure_rtt(int sock_fd, int iterations, double *results[]);
+double time_elapsed(struct timeval *start, struct timeval *end);
 int log_rtt();
 
 int main(int argc, char *argv[])
@@ -173,11 +174,12 @@ int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options)
 }
 
 // can create its own file to log the rtt's
-int measure_rtt(int sock_fd, int iterations)
+int measure_rtt(int sock_fd, int iterations, double *results[])
 {
     struct timeval start, end;
     int numbytes;
-    double timings[10];
+    double elapsed;
+    double timings[iterations];
     char buf[MAXDATASIZE];
 
     for (int i = 0; i < iterations; i++) {
@@ -198,11 +200,26 @@ int measure_rtt(int sock_fd, int iterations)
 
         gettimeofday(&end, NULL);
         buf[numbytes] = '\0';
-
+    
         // Check if recieved messages was expected, valid pass else abort
-        if (buf == PAYLOAD);
+        if (strcmp(buf, PAYLOAD) != 0)
+        {
+            fprintf(stderr, "server: failed to recieve correct payload and retrying\n");
+            i = (i > 0) ? (i - 1) : 0;
+            continue;
+        }
+
+        // Put data in array, for logging after in milliseconds
+        elapsed = time_elapsed(&start, &end);
+        printf("pass %d: %ld\n", i, elapsed);
+        timings[i] = elapsed;
     }
     return 0;
+}
+
+double time_elapsed(struct timeval *start, struct timeval *end)
+{
+    return ((end->tv_sec - start->tv_sec) * 1000.0) + ((end->tv_usec - start->tv_usec) / 1000.0);
 }
 
 int log_rtt() {
