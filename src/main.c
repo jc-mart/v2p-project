@@ -3,10 +3,10 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "file_handler.h"
-#include "rtt_networking.h"
-#include "rtt_helper.h"
-#include "process_helper.h"
+#include "file_handling/file_handler.h"
+#include "networking/rtt_networking.h"
+#include "rtt_functions/rtt_helper.h"
+#include "process/process_helper.h"
 
 #define PORT "2424"
 #define LOGPATH "../logs/"
