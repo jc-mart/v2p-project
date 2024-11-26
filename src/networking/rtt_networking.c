@@ -1,5 +1,21 @@
+/**
+ * @file rtt-networking.c
+ * @brief This file contains networking code that creates sockets and runs a
+ *  protocol between two devices.
+ */
 #include "rtt_networking.h"
 
+/**
+ * @brief Creates a socket to listen for incoming messages.
+ *
+ * The function creates a socket, binds to it, and listens for incoming
+ * messages.
+ *
+ * @param server_info Linked list of potential sockets the function can connect
+ * to
+ * @param sock_fd Integer that holds the socket's file descriptor.
+ * @param options Integer that holds the socket's configuration settings.
+ */
 // Return found struct information to `p`
 int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options) {
     struct addrinfo *potential;
