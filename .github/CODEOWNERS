@@ -1,0 +1,8 @@
+# Owners will be reviewing incoming changes to assigned files
+
+src/ @jc-mart
+tests/ @jc-mart
+Doxyfile @jc-mart
+Makefile @jc-mart
+.github/ @jc-mart
+.clang-format @jc-mart
