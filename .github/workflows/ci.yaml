@@ -1,0 +1,31 @@
+name: C CI
+
+on:
+  push:
+    branches:
+      - main
+      - code-refactor
+  pull_request:
+    branches:
+      - main
+      - code-refactor
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up GCC
+      uses: actions/setup-gcc@v1
+      with:
+        version: 'latest'
+
+    - name: Install dependencies
+      run: sudo apt-get install -y make
+
+    - name: Run tests
+      run: make test
