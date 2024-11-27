@@ -49,10 +49,10 @@ clean:
 
 .PHONY: cppcheck
 cppcheck:
-	cppcheck --enable=all --inconclusive --std=c17 --suppress=missingIncludeSystem -Iinclude src/
+	cppcheck --enable=all --inconclusive --suppress=missingIncludeSystem -Iinclude src/
 
 .PHONY: clang-tidy
 clang-tidy:
-	clang-tidy src/*.c src/*/*.c -- -Iinclude -std=gnu17
+	clang-tidy src/*.c src/*/*.c -- -Iinclude
 
 .PHONY: all test clean
