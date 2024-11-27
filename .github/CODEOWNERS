@@ -6,3 +6,4 @@ Doxyfile @jc-mart
 Makefile @jc-mart
 .github/ @jc-mart
 .clang-format @jc-mart
+.pre-commit-config.yaml

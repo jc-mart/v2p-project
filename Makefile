@@ -47,4 +47,12 @@ test: $(TEST_TARGET)
 clean:
 	rm -rf build
 
+.PHONY: cppcheck
+cppcheck:
+	cppcheck --enable=all --inconclusive --std=c17 --suppress=missingIncludeSystem -Iinclude src/
+
+.PHONY: clang-tidy
+clang-tidy:
+	clang-tidy src/*.c src/*/*.c -- -Iinclude -std=gnu17
+
 .PHONY: all test clean

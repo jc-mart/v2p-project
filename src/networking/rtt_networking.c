@@ -36,7 +36,7 @@ int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options) {
         }
 
         if (bind(*sock_fd, potential->ai_addr, potential->ai_addrlen) == -1) {
-            close(sock_fd);
+            close(*sock_fd);
             perror("server: bind");
             continue;
         }
@@ -71,12 +71,12 @@ void *get_in_addr(struct sockaddr *sa) {
 // can create its own file to log the rtt's
 int measure_rtt(int sock_fd, int iterations, double *results[]) {
     struct timeval start, end;
-    int numbytes;
     double elapsed;
     double timings[iterations];
     char buf[MAXDATASIZE];
 
     for (int i = 0; i < iterations; i++) {
+        int numbytes;
         gettimeofday(&start, NULL);
 
         if (send(sock_fd, PAYLOAD, sizeof PAYLOAD, 0) == -1) {
@@ -102,7 +102,7 @@ int measure_rtt(int sock_fd, int iterations, double *results[]) {
 
         // Put data in array, for logging after in milliseconds
         elapsed = time_elapsed(&start, &end);
-        printf("pass %d: %ld\n", i, elapsed);
+        printf("pass %d: %f\n", i, elapsed);
         timings[i] = elapsed;
     }
     return 0;

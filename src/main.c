@@ -1,19 +1,24 @@
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "file_handling/file_handler.h"
-#include "networking/rtt_networking.h"
-#include "rtt_functions/rtt_helper.h"
-#include "process/process_helper.h"
+#include <unistd.h>
+
+#include "file_handler.h"
+#include "process_helper.h"
+#include "rtt_helper.h"
+#include "rtt_networking.h"
 
 #define PORT "2424"
 #define LOGPATH "../logs/"
 
-int main(int argc, char *argv[]) {
-    int sock_fd, new_fd, status, rv, iterations;
+int main(const int argc, const char *argv[]) {
+    int sock_fd, status, rv, iterations;
     int yes = 1;
+    sock_fd = 0;
     char s[INET6_ADDRSTRLEN];
     socklen_t sin_size;
     struct addrinfo hints, *server_info;
@@ -24,9 +29,12 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "usage: server_rtt <hostname> <iterations>");
         return 1;
     }
+
+    iterations = strtol(argv[2], (char **)NULL, 10);
+
     // TODO Create log directory if not created already
-    if (status = create_dir(LOGPATH) != 0) {
-        fprintf(stderr, "create_dir failed: %s\n", status);
+    if ((status = create_dir(LOGPATH)) != 0) {
+        fprintf(stderr, "create_dir failed: %d\n", status);
         return 1;
     }
 
@@ -42,7 +50,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Server creates and binds to a socket instance
-    if ((status = create_and_bind(server_info, sock_fd, yes)) != 0) {
+    if ((status = create_and_bind(server_info, &sock_fd, &yes)) != 0) {
         fprintf(stderr, "create_and_bind failed: %d\n", status);
         exit(1);
     }
@@ -61,6 +69,8 @@ int main(int argc, char *argv[]) {
     // Passively accept new connections and perform protocol to retrieve RTT
     while (1)  // Find a way for keyboard interrupt handling
     {
+        int new_fd;
+
         sin_size = sizeof incoming_addr;
         new_fd = accept(sock_fd, (struct sockaddr *)&incoming_addr, &sin_size);
 
@@ -75,7 +85,9 @@ int main(int argc, char *argv[]) {
 
         if (!fork()) {  // Forks subsequent interactions to a child process
             // TODO PUT MEASURE RTT FUNCTION HERE WITH ERROR HANDLING
-
+            double results[10];
+            measure_rtt(sock_fd, iterations, results);
+            log_rtt(NULL, NULL, NULL);
             close(sock_fd);
             close(new_fd);
             exit(0);

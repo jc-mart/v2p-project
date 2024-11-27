@@ -1,6 +1,6 @@
 #include <unistd.h>
 
-#include "../src/rtt_functions/rtt_helper.h"
+#include "rtt_helper.h"
 #include "time.h"
 #include "unity.h"
 #include "wait.h"

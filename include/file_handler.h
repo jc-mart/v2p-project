@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #define FILENAMESIZE 23
 #define URW_GR_OR 0644
