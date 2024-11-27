@@ -69,7 +69,7 @@ void *get_in_addr(struct sockaddr *sa) {
 }
 
 // can create its own file to log the rtt's
-int measure_rtt(int sock_fd, int iterations, double *results[]) {
+int measure_rtt(int sock_fd, int iterations, double results[]) {
     struct timeval start, end;
     double elapsed;
     double timings[iterations];

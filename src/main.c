@@ -86,8 +86,10 @@ int main(const int argc, const char *argv[]) {
         if (!fork()) {  // Forks subsequent interactions to a child process
             // TODO PUT MEASURE RTT FUNCTION HERE WITH ERROR HANDLING
             double results[10];
+            struct timeval start;
+            gettimeofday(&start, NULL);
             measure_rtt(sock_fd, iterations, results);
-            log_rtt(NULL, NULL, NULL);
+            log_rtt(results, 10, &start.tv_sec);
             close(sock_fd);
             close(new_fd);
             exit(0);
