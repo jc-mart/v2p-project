@@ -1,3 +1,13 @@
+/**
+ * @brief Calculates the elapsed time between two time points.
+ *
+ * The function calculates the elapsed time in milliseconds between the start
+ * and end time points.
+ *
+ * @param start Pointer to the timeval structure representing the start time.
+ * @param end Pointer to the timeval structure representing the end time.
+ * @return The elapsed time in milliseconds.
+ */
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -15,6 +25,16 @@
 #define PORT "2424"
 #define LOGPATH "../logs/"
 
+/**
+ * @brief Main entry point for the server application.
+ *
+ * The function initializes the server, creates and binds a socket, listens for
+ * incoming connections, and measures the round-trip time (RTT) for messages.
+ *
+ * @param argc Number of command-line arguments.
+ * @param argv Array of command-line arguments.
+ * @return 0 on success, 1 on failure.
+ */
 int main(const int argc, const char *argv[]) {
     int sock_fd, status, rv, iterations;
     int yes = 1;

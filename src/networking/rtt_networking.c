@@ -10,11 +10,15 @@
  *
  * The function creates a socket, binds to it, and listens for incoming
  * messages.
+ * 
+ * From Beej's C Networking book.
  *
  * @param server_info Linked list of potential sockets the function can connect
  * to
  * @param sock_fd Integer that holds the socket's file descriptor.
  * @param options Integer that holds the socket's configuration settings.
+ * @return 0 on success, -1 on setsockopt failure, -2 on bind failure, -3 on
+ * listen failure.
  */
 // Return found struct information to `p`
 int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options) {
@@ -59,7 +63,16 @@ int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options) {
     return 0;  // Successfully binded to a socket
 }
 
-// Adjusts between IPv4 and v6
+/**
+ * @brief Adjusts between IPv4 and IPv6.
+ *
+ * The function returns the address of the socket, adjusted for IPv4 or IPv6.
+ * 
+ * From Beej's C Networking book.
+ *
+ * @param sa Pointer to the sockaddr structure.
+ * @return Pointer to the address.
+ */
 void *get_in_addr(struct sockaddr *sa) {
     if (sa->sa_family == AF_INET) {
         return &(((struct sockaddr_in *)sa)->sin_addr);
@@ -68,7 +81,18 @@ void *get_in_addr(struct sockaddr *sa) {
     return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
-// can create its own file to log the rtt's
+/**
+ * @brief Measures the round-trip time (RTT) for sending and receiving messages.
+ *
+ * The function sends a message to the client, waits for a response, and
+ * measures the time taken for the round trip. The results are stored in the
+ * provided array.
+ *
+ * @param sock_fd Socket file descriptor used for communication.
+ * @param iterations Number of iterations to measure RTT.
+ * @param results Array to store the RTT results in milliseconds.
+ * @return 0 on success, -1 on send failure, -2 on receive failure.
+ */
 int measure_rtt(int sock_fd, int iterations, double results[]) {
     struct timeval start, end;
     double elapsed;
