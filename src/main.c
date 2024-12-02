@@ -1,12 +1,9 @@
 /**
- * @brief Calculates the elapsed time between two time points.
+ * @file main.c
+ * @brief This file contains the main entry point for the server application.
  *
- * The function calculates the elapsed time in milliseconds between the start
- * and end time points.
- *
- * @param start Pointer to the timeval structure representing the start time.
- * @param end Pointer to the timeval structure representing the end time.
- * @return The elapsed time in milliseconds.
+ * The server application creates a socket, binds to it, listens for incoming
+ * connections, and measures the round-trip time (RTT) for messages.
  */
 #include <arpa/inet.h>
 #include <netdb.h>
