@@ -5,6 +5,8 @@
  * The server application creates a socket, binds to it, listens for incoming
  * connections, and measures the round-trip time (RTT) for messages.
  */
+#define _GNU_SOURCE
+
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -39,7 +41,7 @@ int main(const int argc, const char *argv[]) {
     char s[INET6_ADDRSTRLEN];
     socklen_t sin_size;
     struct addrinfo hints, *server_info;
-    struct sockaddr_storage incoming_addr;
+    struct sockaddr_storage incoming_addr = {0};
     struct sigaction sa;
 
     if (argc != 3) {

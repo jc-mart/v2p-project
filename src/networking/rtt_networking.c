@@ -3,6 +3,10 @@
  * @brief This file contains networking code that creates sockets and runs a
  *  protocol between two devices.
  */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include "rtt_networking.h"
 
 /**
@@ -10,7 +14,7 @@
  *
  * The function creates a socket, binds to it, and listens for incoming
  * messages.
- * 
+ *
  * From Beej's C Networking book.
  *
  * @param server_info Linked list of potential sockets the function can connect
@@ -67,7 +71,7 @@ int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options) {
  * @brief Adjusts between IPv4 and IPv6.
  *
  * The function returns the address of the socket, adjusted for IPv4 or IPv6.
- * 
+ *
  * From Beej's C Networking book.
  *
  * @param sa Pointer to the sockaddr structure.
