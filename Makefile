@@ -1,19 +1,23 @@
 # Compiler and flag options
 CC = gcc
-CFLAGS = -Iinclude -Itests -Wall -Wextra -std=gnu17
-LDFLAGS =
+CFLAGS = -Iinclude -Itests -Wall -Wextra -g -pg
+LDFLAGS = -pg
 
 # Source code
-SRC = src/rtt_functions/rtt_helper.c
-TEST_SRC = tests/test_rtt_helper.c tests/unity.c
+SRC = src/rtt_functions/rtt_helper.c src/file_handling/file_handler.c
+TEST_SRC = $(wildcard tests/test_*.c)
+UNITY_SRC = tests/unity.c
 
 # Generated object files
 OBJ = $(SRC:src/%.c=build/%.o)
 TEST_OBJ = $(TEST_SRC:tests/%.c=build/%.o)
+UNITY_OBJ = $(UNITY_SRC:tests/%.c=build/%.o)
+
+# Test executables
+TEST_EXECUTABLES = $(TEST_SRC:tests/%.c=build/%)
 
 # Targets
 TARGET = build/my_project
-TEST_TARGET = build/test_my_project
 
 # Default target
 all: $(TARGET)
@@ -22,8 +26,8 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-# Build the test executable
-$(TEST_TARGET): $(OBJ) $(TEST_OBJ)
+# Build the test executables
+$(TEST_EXECUTABLES): build/%: build/%.o $(UNITY_OBJ) $(OBJ)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # Compile source files
@@ -40,19 +44,21 @@ build:
 	mkdir -p build
 
 # Run tests
-test: $(TEST_TARGET)
-	./$(TEST_TARGET)
+test: $(TEST_EXECUTABLES)
+	@for test in $(TEST_EXECUTABLES); do ./$$test || exit 1; done
 
 # Clean build directory
 clean:
 	rm -rf build
 
+# Run Cppcheck
 .PHONY: cppcheck
 cppcheck:
-	cppcheck --enable=all --inconclusive --suppress=missingIncludeSystem -Iinclude src/
+	cppcheck --enable=all --inconclusive --std=c11 --suppress=missingIncludeSystem -Iinclude src
 
+# Run Clang-Tidy
 .PHONY: clang-tidy
 clang-tidy:
-	clang-tidy src/*.c src/*/*.c -- -Iinclude
+	clang-tidy -p build src/**/*.c
 
 .PHONY: all test clean
