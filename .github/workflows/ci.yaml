@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - code-refactor
+      - test-dev
   pull_request:
     branches:
       - main
-      - code-refactor
+      - test-dev
 
 jobs:
   build:
