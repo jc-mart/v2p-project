@@ -59,6 +59,6 @@ cppcheck:
 # Run Clang-Tidy
 .PHONY: clang-tidy
 clang-tidy:
-	clang-tidy -p build src/**/*.c
+	clang-tidy -p build src/**/*.c -- -Iinclude
 
 .PHONY: all test clean
