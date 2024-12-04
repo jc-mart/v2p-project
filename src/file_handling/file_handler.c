@@ -19,9 +19,10 @@ int log_rtt(const double data[], const int data_size, const char dir[],
             const int dir_size, const time_t *time) {
     // Convert epoch time to mmdd_hh:mm:ss
     char buf[FILENAMESIZE];
-    char log_filename[] = "rtt_%m%d_%H%M%S.csv";
+    const char log_filename[] = "rtt_%m%d_%H%M%S.csv";
     strncpy(buf, dir, dir_size);
-    strftime(buf, FILENAMESIZE, strncat(buf, log_filename, sizeof log_filename),
+    strftime(buf, FILENAMESIZE,
+             strncat(buf, log_filename, (sizeof(buf) - strlen(buf) - 1)),
              localtime(time));
 
     FILE *file = fopen(buf, "w");

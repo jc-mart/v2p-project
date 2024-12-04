@@ -108,7 +108,7 @@ int main(const int argc, const char *argv[]) {
             struct timeval start;
             gettimeofday(&start, NULL);
             measure_rtt(sock_fd, iterations, results);
-            log_rtt(results, 10, &start.tv_sec);
+            log_rtt(results, 10, LOGPATH, sizeof LOGPATH, &start.tv_sec);
             close(sock_fd);
             close(new_fd);
             exit(0);

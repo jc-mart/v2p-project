@@ -24,7 +24,6 @@
  * @return 0 on success, -1 on setsockopt failure, -2 on bind failure, -3 on
  * listen failure.
  */
-// Return found struct information to `p`
 int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options) {
     struct addrinfo *potential;
 

@@ -4,7 +4,7 @@ CFLAGS = -Iinclude -Itests -Wall -Wextra -g -pg
 LDFLAGS = -pg
 
 # Source code
-SRC = src/rtt_functions/rtt_helper.c src/file_handling/file_handler.c
+SRC = src/rtt_functions/rtt_helper.c src/file_handling/file_handler.c src/networking/rtt_networking.c
 TEST_SRC = $(wildcard tests/test_*.c)
 UNITY_SRC = tests/unity.c
 
