@@ -54,11 +54,11 @@ clean:
 # Run Cppcheck
 .PHONY: cppcheck
 cppcheck:
-	cppcheck --enable=all --inconclusive --std=c11 --suppress=missingIncludeSystem -Iinclude src
+	cppcheck --enable=all --inconclusive --std=c11 --suppress=missingIncludeSystem -Iinclude src tests/test_*.c
 
 # Run Clang-Tidy
 .PHONY: clang-tidy
 clang-tidy:
-	clang-tidy -p build src/**/*.c -- -Iinclude
+	clang-tidy -p build src/**/*.c tests/test_*.c -- -Iinclude
 
 .PHONY: all test clean

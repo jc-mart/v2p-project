@@ -25,12 +25,11 @@
  * listen failure.
  */
 int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options) {
-    struct addrinfo *potential;
+    struct addrinfo *ptr;
 
-    for (potential = server_info; potential != NULL;
-         potential = potential->ai_next) {
-        if ((*sock_fd = socket(potential->ai_family, potential->ai_socktype,
-                               potential->ai_protocol)) == -1) {
+    for (ptr = server_info; ptr != NULL; ptr = ptr->ai_next) {
+        if ((*sock_fd = socket(ptr->ai_family, ptr->ai_socktype,
+                               ptr->ai_protocol)) == -1) {
             perror("server: socket");
             continue;  // Goes onto next element of linked list
         }
@@ -42,7 +41,7 @@ int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options) {
             return -1;  // Something fatal, Beej's book exits upon failure
         }
 
-        if (bind(*sock_fd, potential->ai_addr, potential->ai_addrlen) == -1) {
+        if (bind(*sock_fd, ptr->ai_addr, ptr->ai_addrlen) == -1) {
             close(*sock_fd);
             perror("server: bind");
             continue;
@@ -53,7 +52,7 @@ int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options) {
 
     freeaddrinfo(server_info);  // Binded to server socket, no need for this
 
-    if (potential == NULL) {
+    if (ptr == NULL) {
         fprintf(stderr, "server: failed to bind socket\n");
         return -2;
     }
