@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <sys/wait.h>
 
@@ -10,7 +12,7 @@
 
 int yes = 1;
 int test_sock, client_fd;
-struct addrinfo test_hints, *test_info;
+struct addrinfo test_hints, *test_info, client_hints, *client_info;
 struct sockaddr_in test_sockname;
 socklen_t test_socklen = sizeof test_sockname;
 
@@ -24,7 +26,7 @@ void tearDown(void) {
     if (client_fd != -1) close(client_fd);
 }
 
-void setup_socket(int *socket, struct addrinfo hints, struct addrinfo *info,
+void setup_server(int *socket, struct addrinfo hints, struct addrinfo *info,
                   int *options) {
     // Ensure structures are zeroed out
     memset(&hints, 0, sizeof hints);
@@ -41,8 +43,44 @@ void setup_socket(int *socket, struct addrinfo hints, struct addrinfo *info,
     TEST_ASSERT_EQUAL_MESSAGE(0, status, "Create and bind funciton failed");
 }
 
+void setup_client(int *client_socket, struct addrinfo hints,
+                  struct addrinfo *info) {
+    struct addrinfo *ptr;
+
+    memset(&hints, 0, sizeof hints);
+    memset(&info, 0, sizeof info);
+
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (getaddrinfo("localhost", TESTPORT, &hints, &info) != 0) {
+        perror("getaddrinfo");
+        TEST_ASSERT_FALSE_MESSAGE(-1, "[CLIENT] getaddrinfo failed");
+    }
+
+    for (ptr = info; ptr != NULL; ptr = ptr->ai_next) {
+        if ((*client_socket = socket(ptr->ai_family, ptr->ai_socktype,
+                                     ptr->ai_protocol)) == -1) {
+            perror("client: socket");
+            continue;
+        }
+
+        if (connect(*client_socket, ptr->ai_addr, ptr->ai_addrlen) == -1) {
+            close(*client_socket);
+            perror("client: connect");
+            continue;
+        }
+
+        break;
+    }
+
+    if (ptr == NULL)
+        TEST_ASSERT_FALSE_MESSAGE(-1, "[CLIENT] failed to connect");
+    freeaddrinfo(info);
+}
+
 void test_create_and_bind(void) {
-    setup_socket(&test_sock, test_hints, test_info, &yes);
+    setup_server(&test_sock, test_hints, test_info, &yes);
 
     int status = getsockname(test_sock, (struct sockaddr *)&test_sockname,
                              &test_socklen);
@@ -52,14 +90,15 @@ void test_create_and_bind(void) {
     TEST_ASSERT_EQUAL_MESSAGE(2424, actual, "Incorrect socket");
 }
 
-void server(void) {
+// Basics will ensure correctness of `create_and_bind()`
+void basic_server(void) {
     int new_fd;
     struct sockaddr_storage incoming_addr;
     socklen_t addr_size;
     char buf[MAXDATASIZE];
     int num_bytes;
 
-    setup_socket(&test_sock, test_hints, test_info, &yes);
+    setup_server(&test_sock, test_hints, test_info, &yes);
     addr_size = sizeof incoming_addr;
     new_fd = accept(test_sock, (struct sockaddr *)&incoming_addr, &addr_size);
 
@@ -82,39 +121,12 @@ void server(void) {
     close(test_sock);
 }
 
-void client(void) {
+// Basics will ensure the correctness of `create_and_bind()`
+void basic_client(void) {
     int num_bytes;
-    struct addrinfo hints = {0};
-    struct addrinfo *server_info, *ptr;
     char buf[MAXDATASIZE];
 
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    if (getaddrinfo("localhost", TESTPORT, &hints, &server_info) != 0) {
-        perror("getaddrinfo");
-        TEST_ASSERT_FALSE_MESSAGE(-1, "[CLIENT] getaddrinfo failed");
-    }
-
-    for (ptr = server_info; ptr != NULL; ptr = ptr->ai_next) {
-        if ((client_fd = socket(ptr->ai_family, ptr->ai_socktype,
-                                ptr->ai_protocol)) == -1) {
-            perror("client: socket");
-            continue;
-        }
-
-        if (connect(client_fd, ptr->ai_addr, ptr->ai_addrlen) == -1) {
-            close(client_fd);
-            perror("client: connect");
-            continue;
-        }
-
-        break;
-    }
-
-    if (ptr == NULL)
-        TEST_ASSERT_FALSE_MESSAGE(-1, "[CLIENT] failed to connect");
-    freeaddrinfo(server_info);
+    setup_client(&client_fd, client_hints, client_info);
 
     strncpy(buf, TESTPAYLOAD, MAXDATASIZE - 1);
     num_bytes = send(client_fd, buf, strlen(buf), 0);
@@ -126,15 +138,20 @@ void client(void) {
     close(client_fd);
 }
 
-void test_socket_comms(void) {
-    pid_t pid = fork();
-
-    if (pid == 0) {
-        server();
-    } else {
-        client();
-    }
+// Protocols will ensure the correctness of `measure_rtt()`
+void protocol_server(void) {
+    int new_fd;
+    struct sockaddr_storage incoming_addr;
+    socklen_t addr_size;
+    char buf[MAXDATASIZE];
 }
+
+// Protocols will ensure the correctness of `measure_rtt()`
+void protocol_client(void) {}
+
+void test_socket_comms(void) { fork() ? basic_client() : basic_server(); }
+
+void test_measure_rtt(void) {}
 
 int main(void) {
     UNITY_BEGIN();
