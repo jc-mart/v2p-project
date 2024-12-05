@@ -6,35 +6,35 @@
 #include "unity.h"
 
 #define TESTPORT "2424"
-#define ESTPORT "2425"
-#define LOCALHOST "127.0.0.1"
-#define PAYLOAD "TEST PAYLOAD"
-#define MAXSIZE 32
+#define TESTPAYLOAD "TEST"
 
 int yes = 1;
-int test_sock, est_sock;
-struct addrinfo *test_hints, *test_info, *est_hints, *est_info;
-struct sockaddr_storage incoming_address;
+int test_sock, client_fd;
+struct addrinfo test_hints, *test_info;
 struct sockaddr_in test_sockname;
 socklen_t test_socklen = sizeof test_sockname;
 
 void setUp(void) {
     test_sock = -1;
-    est_sock = -1;
+    client_fd = -1;
 }
 
 void tearDown(void) {
     if (test_sock != -1) close(test_sock);
-    if (est_sock != -1) close(est_sock);
+    if (client_fd != -1) close(client_fd);
 }
 
-void setup_socket(int *socket, struct addrinfo *hints, struct addrinfo *info,
+void setup_socket(int *socket, struct addrinfo hints, struct addrinfo *info,
                   int *options) {
     // Ensure structures are zeroed out
     memset(&hints, 0, sizeof hints);
     memset(&info, 0, sizeof info);
 
-    int status = getaddrinfo(NULL, TESTPORT, hints, &info);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    int status = getaddrinfo(NULL, TESTPORT, &hints, &info);
     TEST_ASSERT_EQUAL_MESSAGE(0, status, "Failed to get address info");
 
     status = create_and_bind(info, socket, options);
@@ -52,84 +52,93 @@ void test_create_and_bind(void) {
     TEST_ASSERT_EQUAL_MESSAGE(2424, actual, "Incorrect socket");
 }
 
-void test_socket_connection(void) {
+void server(void) {
+    int new_fd;
+    struct sockaddr_storage incoming_addr;
+    socklen_t addr_size;
+    char buf[MAXDATASIZE];
+    int num_bytes;
+
+    setup_socket(&test_sock, test_hints, test_info, &yes);
+    addr_size = sizeof incoming_addr;
+    new_fd = accept(test_sock, (struct sockaddr *)&incoming_addr, &addr_size);
+
+    if (new_fd == -1) {
+        perror("accept");
+        TEST_ASSERT_FALSE_MESSAGE(new_fd,
+                                  "[SERVER] Failed to accept connection");
+    }
+
+    num_bytes = recv(new_fd, buf, MAXDATASIZE - 1, 0);
+    if (num_bytes == -1) {
+        perror("recv");
+        TEST_ASSERT_FALSE_MESSAGE(new_fd, "[SERVER] Failed to recieve message");
+    }
+
+    buf[num_bytes] = '\0';
+    TEST_ASSERT_EQUAL_STRING(TESTPAYLOAD, buf);
+
+    close(new_fd);
+    close(test_sock);
+}
+
+void client(void) {
+    int num_bytes;
+    struct addrinfo hints = {0};
+    struct addrinfo *server_info, *ptr;
+    char buf[MAXDATASIZE];
+
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (getaddrinfo("localhost", TESTPORT, &hints, &server_info) != 0) {
+        perror("getaddrinfo");
+        TEST_ASSERT_FALSE_MESSAGE(-1, "[CLIENT] getaddrinfo failed");
+    }
+
+    for (ptr = server_info; ptr != NULL; ptr = ptr->ai_next) {
+        if ((client_fd = socket(ptr->ai_family, ptr->ai_socktype,
+                                ptr->ai_protocol)) == -1) {
+            perror("client: socket");
+            continue;
+        }
+
+        if (connect(client_fd, ptr->ai_addr, ptr->ai_addrlen) == -1) {
+            close(client_fd);
+            perror("client: connect");
+            continue;
+        }
+
+        break;
+    }
+
+    if (ptr == NULL)
+        TEST_ASSERT_FALSE_MESSAGE(-1, "[CLIENT] failed to connect");
+    freeaddrinfo(server_info);
+
+    strncpy(buf, TESTPAYLOAD, MAXDATASIZE - 1);
+    num_bytes = send(client_fd, buf, strlen(buf), 0);
+    if (num_bytes == -1) {
+        perror("send");
+        TEST_ASSERT_FALSE_MESSAGE(num_bytes, "[CLIENT] failed to send message");
+    }
+
+    close(client_fd);
+}
+
+void test_socket_comms(void) {
     pid_t pid = fork();
 
     if (pid == 0) {
-        // Listener setup
-        int recieved = 0;
-        int new_fd, num_bytes;
-        char buf[MAXSIZE];
-        socklen_t incoming_sin_size = {0};
-
-        setup_socket(&test_sock, test_hints, test_info, &yes);
-
-        while (!recieved) {
-            new_fd = accept(test_sock, (struct sockaddr *)&incoming_address,
-                            &incoming_sin_size);
-            if (new_fd == -1) {
-                perror("Accept failed");
-                continue;
-            }
-
-            num_bytes = recv(new_fd, buf, MAXDATASIZE - 1, 0);
-            TEST_ASSERT_NOT_EQUAL_MESSAGE(-1, num_bytes, "Recieve failed");
-
-            buf[num_bytes] = '\0';
-            TEST_ASSERT_EQUAL_STRING(PAYLOAD, buf);
-        }
-
+        server();
     } else {
-        // Standby for listener setup
-        sleep(1);
-        // Sender setup
-        int est_status;
-        struct addrinfo *ptr;
-
-        memset(&est_hints, 0, sizeof est_hints);
-        est_hints->ai_family = AF_UNSPEC;
-        est_hints->ai_socktype = SOCK_STREAM;
-
-        est_status = getaddrinfo(LOCALHOST, TESTPORT, &est_hints, &est_info);
-        TEST_ASSERT_EQUAL_MESSAGE(0, est_status, "Failed to get address info");
-
-        // Connect to test socket
-        for (ptr = est_info; ptr != NULL; ptr = ptr->ai_next) {
-            if ((est_sock = socket(ptr->ai_family, ptr->ai_socktype,
-                                   ptr->ai_protocol)) == -1) {
-                perror("client: socket");
-                continue;
-            }
-
-            if (connect(est_sock, ptr->ai_addr, ptr->ai_addrlen) == -1) {
-                close(est_sock);
-                perror("client: connect");
-                continue;
-            }
-
-            break;
-        }
-        TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, ptr, "Client failed to connect");
-
-        freeaddrinfo(est_info);
-
-        est_status = send(est_sock, PAYLOAD, sizeof PAYLOAD, 0);
-        TEST_ASSERT_EQUAL_MESSAGE(0, est_status, "Failed to send payload");
-
-        close(est_sock);
+        client();
     }
-
-    // Set up test socket
-
-    // Set up another socket to send a message
-
-    // Confirm delivery
-
-    // Close sockets
 }
 
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_create_and_bind);
+    RUN_TEST(test_socket_comms);
     return UNITY_END();
 }

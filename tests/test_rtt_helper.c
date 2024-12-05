@@ -1,9 +1,7 @@
 #include <unistd.h>
 
 #include "rtt_helper.h"
-#include "time.h"
 #include "unity.h"
-#include "wait.h"
 
 static struct timeval start = {0};
 static struct timeval end = {0};
