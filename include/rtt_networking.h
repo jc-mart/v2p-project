@@ -12,9 +12,10 @@
 #define BACKLOG 10
 #define MAXDATASIZE 8
 #define PAYLOAD "PING"
+#define FIN "FIN"
 
 int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options);
-int measure_rtt(int sock_fd, int iterations, double results[]);
+int measure_rtt(int sock_fd, int iterations, double *results);
 void *get_in_addr(struct sockaddr *sa);
 
 #endif

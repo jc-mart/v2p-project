@@ -92,20 +92,22 @@ void *get_in_addr(struct sockaddr *sa) {
  *
  * @param sock_fd Socket file descriptor used for communication.
  * @param iterations Number of iterations to measure RTT.
- * @param results Array to store the RTT results in milliseconds.
+ * @param results Pointer to an array that stores the RTT results in
+ * milliseconds.
  * @return 0 on success, -1 on send failure, -2 on receive failure.
  */
-int measure_rtt(int sock_fd, int iterations, double results[]) {
+int measure_rtt(int sock_fd, int iterations, double *results) {
+    int numbytes;
     struct timeval start, end;
     double elapsed;
     double timings[iterations];
     char buf[MAXDATASIZE];
 
     for (int i = 0; i < iterations; i++) {
-        int numbytes;
         gettimeofday(&start, NULL);
 
-        if (send(sock_fd, PAYLOAD, sizeof PAYLOAD, 0) == -1) {
+        strncpy(buf, PAYLOAD, MAXDATASIZE - 1);
+        if (send(sock_fd, PAYLOAD, strlen(buf), 0) == -1) {
             perror("send");
             return -1;
         }
@@ -119,17 +121,22 @@ int measure_rtt(int sock_fd, int iterations, double results[]) {
         buf[numbytes] = '\0';
 
         // Check if recieved messages was expected, valid pass else abort
-        if (strcmp(buf, PAYLOAD) != 0) {
+        if (!strcmp(buf, PAYLOAD)) {
             fprintf(stderr,
                     "server: failed to recieve correct payload and retrying\n");
             i = (i > 0) ? (i - 1) : 0;
             continue;
         }
 
+        /**
+         * @todo in case connections terminated, abort function.
+         */
+
         // Put data in array, for logging after in milliseconds
         elapsed = time_elapsed(&start, &end);
         printf("pass %d: %f\n", i, elapsed);
         timings[i] = elapsed;
     }
+
     return 0;
 }
