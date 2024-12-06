@@ -9,6 +9,7 @@
 
 #define TESTPORT "2424"
 #define TESTPAYLOAD "TEST"
+#define ACKNOWLEDGE "ACK"
 
 int yes = 1;
 int test_sock, client_fd;
@@ -92,11 +93,10 @@ void test_create_and_bind(void) {
 
 // Basics will ensure correctness of `create_and_bind()`
 void basic_server(void) {
-    int new_fd;
+    int new_fd, num_bytes;
     struct sockaddr_storage incoming_addr;
     socklen_t addr_size;
     char buf[MAXDATASIZE];
-    int num_bytes;
 
     setup_server(&test_sock, test_hints, test_info, &yes);
     addr_size = sizeof incoming_addr;
@@ -140,14 +140,58 @@ void basic_client(void) {
 
 // Protocols will ensure the correctness of `measure_rtt()`
 void protocol_server(void) {
-    int new_fd;
+    int new_fd, num_bytes;
     struct sockaddr_storage incoming_addr;
     socklen_t addr_size;
     char buf[MAXDATASIZE];
+
+    setup_server(&test_sock, test_hints, test_info, &yes);
+    addr_size = sizeof incoming_addr;
+    new_fd = accept(test_sock, (struct sockaddr *)&incoming_addr, &addr_size);
+
+    if (new_fd == -1) {
+        perror("accept");
+        TEST_ASSERT_FALSE_MESSAGE(new_fd,
+                                  "[SERVER] Failed to accept connection");
+    }
+
+    // acknowledge the client
+    strncpy(buf, ACKNOWLEDGE, MAXDATASIZE - 1);
+    num_bytes = send(new_fd, buf, strlen(buf), 0);
+    if (num_bytes == -1) {
+        perror("send");
+        TEST_ASSERT_FALSE_MESSAGE(num_bytes, "[SERVER] failed to send ping");
+    }
+
+    sleep(1);  // mimick some delay
+    // recieve acknowledge from client
+    num_bytes = recv(new_fd, buf, MAXDATASIZE - 1, 0);
+    if (num_bytes == -1) {
+        perror("send");
+        TEST_ASSERT_FALSE_MESSAGE(num_bytes, "[SERVER] failed to recieve ping");
+    }
+
+    buf[num_bytes] = '\0';
+    TEST_ASSERT_EQUAL_STRING(ACKNOWLEDGE, buf);
+
+    /**
+     * @todo introduce measure_rtt protocol; have
+     * client mimick a ping.
+     */
 }
 
 // Protocols will ensure the correctness of `measure_rtt()`
-void protocol_client(void) {}
+void mimick_protocol_client(void) {
+    int num_bytes;
+    char buf[MAXDATASIZE];
+
+    setup_client(&client_fd, client_hints, client_info);
+
+    // recieve host acknowledgement
+    // send acknowledgemet to host
+    // recieve ping for x iterations
+    // return ping for x iterations
+}
 
 void test_socket_comms(void) { fork() ? basic_client() : basic_server(); }
 
