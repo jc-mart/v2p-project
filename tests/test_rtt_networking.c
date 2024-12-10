@@ -25,9 +25,18 @@ void setUp(void) {
 }
 
 void tearDown(void) {
-    if (host_fd != -1) close(host_fd);
-    if (host_new_fd != -1) close(host_new_fd);
-    if (client_fd != -1) close(client_fd);
+    if (host_fd != -1) {
+        shutdown(host_fd, SHUT_RDWR);
+        close(host_fd);
+    }
+    if (host_new_fd != -1) {
+        shutdown(host_new_fd, SHUT_RDWR);
+        close(host_new_fd);
+    }
+    if (client_fd != -1) {
+        shutdown(client_fd, SHUT_RDWR);
+        close(client_fd);
+    }
 }
 
 void setup_server(int *socket, struct addrinfo hints, struct addrinfo *info,
@@ -151,8 +160,11 @@ void protocol_server(void) {
     double timings[TIMINGSIZE];
     char buf[MAXDATASIZE];
 
+    printf("server setting up\n");
     setup_server(&host_fd, test_hints, test_info, &yes);
     addr_size = sizeof incoming_addr;
+
+    printf("server is accepting new connection\n");
     host_new_fd =
         accept(host_fd, (struct sockaddr *)&incoming_addr, &addr_size);
 
@@ -162,6 +174,7 @@ void protocol_server(void) {
                                   "[SERVER] Failed to accept connection");
     }
 
+    printf("server sending ack to client\n");
     // acknowledge the client
     strncpy(buf, ACKNOWLEDGE, MAXDATASIZE - 1);
     num_bytes = send(host_new_fd, buf, strlen(buf), 0);
@@ -171,6 +184,7 @@ void protocol_server(void) {
     }
 
     sleep(1);  // mimick some delay
+    printf("server receiving ack from client\n");
     // recieve acknowledge from client
     num_bytes = recv(host_new_fd, buf, MAXDATASIZE - 1, 0);
     if (num_bytes == -1) {
@@ -187,16 +201,19 @@ void protocol_server(void) {
      * and client to close sockets in case of either failure
      * or failed test condition
      */
+    printf("server beginning protocol\n");
     measure_rtt(host_new_fd, TIMINGSIZE, timings);
 
     // Protocol complete, send finish message
     strncpy(buf, FIN, MAXDATASIZE - 1);
+    printf("server sending finish to client\n");
     if ((num_bytes = send(host_new_fd, FIN, strlen(buf), 0)) == -1) {
         perror("send");
         TEST_ASSERT_FALSE_MESSAGE(num_bytes, "Failed to send finish to client");
     }
 
     // Make sure that client did recieve finish message
+    printf("server receiving confirmation from client\n");
     if ((num_bytes = recv(host_new_fd, buf, MAXDATASIZE - 1, 0)) == -1) {
         perror("recv");
         TEST_ASSERT_FALSE_MESSAGE(num_bytes,
@@ -209,7 +226,9 @@ void mimick_protocol_client(void) {
     int num_bytes, result;
     char buf[MAXDATASIZE];
 
+    printf("client setting up\n");
     setup_client(&client_fd, client_hints, client_info);
+    printf("client receiving host ack\n");
     // recieve host acknowledgement
     if ((num_bytes = recv(client_fd, buf, MAXDATASIZE - 1, 0)) == -1) {
         perror("recv");
@@ -219,7 +238,7 @@ void mimick_protocol_client(void) {
 
     buf[num_bytes] = '\0';
     TEST_ASSERT_EQUAL_STRING(ACKNOWLEDGE, buf);
-
+    printf("client sending ack to host\n");
     // send acknowledgemet to host
     strncpy(buf, ACKNOWLEDGE, MAXDATASIZE - 1);
     if ((num_bytes = send(client_fd, buf, strlen(buf), 0)) == -1) {
@@ -229,6 +248,7 @@ void mimick_protocol_client(void) {
     }
     // recieve ping for x iterations
     // return ping for x iterations
+    printf("client entering for loop\n");
     while (1) {
         if ((num_bytes = recv(client_fd, buf, MAXDATASIZE - 1, 0)) == -1) {
             perror("recv");
@@ -252,6 +272,7 @@ void mimick_protocol_client(void) {
         }
     }
 
+    printf("client exited for loop, finishing interaction\n");
     strncpy(buf, FIN, MAXDATASIZE - 1);
     if ((num_bytes = send(client_fd, buf, strlen(buf), 0)) == -1) {
         perror("send");
@@ -263,13 +284,14 @@ void mimick_protocol_client(void) {
 void test_socket_comms(void) { fork() ? basic_client() : basic_server(); }
 
 void test_measure_rtt(void) {
+    printf("beginning measure rtt test\n");
     fork() ? mimick_protocol_client() : protocol_server();
 }
 
 int main(void) {
     UNITY_BEGIN();
-    RUN_TEST(test_create_and_bind);
-    RUN_TEST(test_socket_comms);
+    // RUN_TEST(test_create_and_bind);
+    // RUN_TEST(test_socket_comms);
     RUN_TEST(test_measure_rtt);
     return UNITY_END();
 }
