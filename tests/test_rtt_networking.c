@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <stdlib.h>
 #include <sys/wait.h>
 
 #include "rtt_networking.h"
@@ -26,15 +27,12 @@ void setUp(void) {
 
 void tearDown(void) {
     if (host_fd != -1) {
-        shutdown(host_fd, SHUT_RDWR);
         close(host_fd);
     }
     if (host_new_fd != -1) {
-        shutdown(host_new_fd, SHUT_RDWR);
         close(host_new_fd);
     }
     if (client_fd != -1) {
-        shutdown(client_fd, SHUT_RDWR);
         close(client_fd);
     }
 }
@@ -219,6 +217,9 @@ void protocol_server(void) {
         TEST_ASSERT_FALSE_MESSAGE(num_bytes,
                                   "Failed to recieve finish from client");
     }
+
+    close(host_new_fd);
+    close(host_fd);
 }
 
 // Protocols will ensure the correctness of `measure_rtt()`
@@ -279,19 +280,39 @@ void mimick_protocol_client(void) {
         TEST_ASSERT_FALSE_MESSAGE(num_bytes,
                                   "Failed to send finish message to host");
     }
+
+    close(client_fd);
 }
 
-void test_socket_comms(void) { fork() ? basic_client() : basic_server(); }
+void test_socket_comms(void) {
+    if (fork()) {
+        basic_client();
+        wait(NULL);
+    } else {
+        basic_server();
+        exit(0);  // Terminate child process to prevent multiple tests
+    }
+}
 
 void test_measure_rtt(void) {
     printf("beginning measure rtt test\n");
-    fork() ? mimick_protocol_client() : protocol_server();
+
+    if (fork()) {
+        protocol_server();
+        wait(NULL);
+    } else {
+        mimick_protocol_client();
+        exit(0);
+    }
 }
 
 int main(void) {
     UNITY_BEGIN();
-    // RUN_TEST(test_create_and_bind);
-    // RUN_TEST(test_socket_comms);
+    RUN_TEST(test_create_and_bind);
+    sleep(5);
+    RUN_TEST(test_socket_comms);
+    sleep(5);
     RUN_TEST(test_measure_rtt);
+
     return UNITY_END();
 }

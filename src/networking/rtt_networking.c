@@ -121,7 +121,7 @@ int measure_rtt(int sock_fd, int iterations, double *results) {
         buf[numbytes] = '\0';
 
         // Check if recieved messages was expected, valid pass else abort
-        if (!strcmp(buf, PAYLOAD)) {
+        if (strncmp(buf, PAYLOAD, strlen(PAYLOAD))) {
             fprintf(stderr,
                     "server: failed to recieve correct payload and retrying\n");
             i = (i > 0) ? (i - 1) : 0;
