@@ -4,11 +4,10 @@ on:
   push:
     branches:
       - main
-      - test-dev
+      - client-networking
   pull_request:
     branches:
       - main
-      - test-dev
       - client-networking
 
 jobs:
