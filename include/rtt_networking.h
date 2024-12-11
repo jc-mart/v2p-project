@@ -16,6 +16,7 @@
 
 int create_and_bind(struct addrinfo *server_info, int *sock_fd, int *options);
 int measure_rtt(int sock_fd, int iterations, double *results);
+int relay_ping(int sock_fd);
 void *get_in_addr(struct sockaddr *sa);
 
 #endif

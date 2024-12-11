@@ -284,6 +284,44 @@ void mimick_protocol_client(void) {
     close(client_fd);
 }
 
+void protocol_client(void) {
+    int num_bytes;
+    char buf[MAXDATASIZE];
+
+    printf("client setting up\n");
+    setup_client(&client_fd, client_hints, client_info);
+    printf("client receiving host ack\n");
+    // recieve host acknowledgement
+    if ((num_bytes = recv(client_fd, buf, MAXDATASIZE - 1, 0)) == -1) {
+        perror("recv");
+        TEST_ASSERT_FALSE_MESSAGE(
+            num_bytes, "Failed to recieve acknowledgement from server");
+    }
+
+    buf[num_bytes] = '\0';
+    TEST_ASSERT_EQUAL_STRING(ACKNOWLEDGE, buf);
+    printf("client sending ack to host\n");
+    // send acknowledgemet to host
+    strncpy(buf, ACKNOWLEDGE, MAXDATASIZE - 1);
+    if ((num_bytes = send(client_fd, buf, strlen(buf), 0)) == -1) {
+        perror("send");
+        TEST_ASSERT_FALSE_MESSAGE(num_bytes,
+                                  "Failed to send acknowledgement to server");
+    }
+
+    relay_ping(client_fd);
+
+    printf("client exited for loop, finishing interaction\n");
+    strncpy(buf, FIN, MAXDATASIZE - 1);
+    if ((num_bytes = send(client_fd, buf, strlen(buf), 0)) == -1) {
+        perror("send");
+        TEST_ASSERT_FALSE_MESSAGE(num_bytes,
+                                  "Failed to send finish message to host");
+    }
+
+    close(client_fd);
+}
+
 void test_socket_comms(void) {
     if (fork()) {
         basic_client();
@@ -306,13 +344,27 @@ void test_measure_rtt(void) {
     }
 }
 
+void test_relay_ping(void) {
+    printf("beginning relay ping test\n");
+
+    if (fork()) {
+        protocol_server();
+        wait(NULL);
+    } else {
+        protocol_client();
+        exit(0);
+    }
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_create_and_bind);
-    sleep(5);
+    sleep(1);
     RUN_TEST(test_socket_comms);
-    sleep(5);
+    sleep(1);
     RUN_TEST(test_measure_rtt);
+    sleep(1);
+    RUN_TEST(test_relay_ping);
 
     return UNITY_END();
 }

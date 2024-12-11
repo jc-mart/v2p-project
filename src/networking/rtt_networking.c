@@ -140,3 +140,39 @@ int measure_rtt(int sock_fd, int iterations, double *results) {
 
     return 0;
 }
+
+/**
+ * @brief Relay ping messages from client to server.
+ *
+ * This function continuously receives messages from the socket, checks if the
+ * received message is the termination message (FIN), and if not, sends back a
+ * predefined payload (PING). The function will terminate when the termination
+ * message is received.
+ *
+ * @param sock_fd The socket file descriptor used for communication.
+ * @return 0 on successful termination, -1 on receive error, -2 on send error.
+ *
+ * @todo Ideally have a keystroke that terminates the while loop.
+ */
+int relay_ping(int sock_fd) {
+    int num_bytes;
+    char buf[MAXDATASIZE];
+
+    while (1) {
+        if ((num_bytes = recv(sock_fd, buf, MAXDATASIZE - 1, 0)) == -1) {
+            perror("recv");
+            return -1;
+        }
+
+        buf[num_bytes] = '\0';
+        if (!strncmp(FIN, buf, strlen(FIN))) break;
+
+        strncpy(buf, PAYLOAD, MAXDATASIZE - 1);
+        if (send(sock_fd, buf, strlen(buf), 0) == -1) {
+            perror("send");
+            return -2;
+        }
+    }
+
+    return 0;
+}
